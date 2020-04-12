@@ -20,12 +20,13 @@ package nfs
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 )
 
 const (
 	ganeshaLog     = "/dev/stdout"
-	ganeshaOptions = "NIV_DEBUG"
+	ganeshaOptions = "NIV_EVENT"
 )
 
 // Setup sets up various prerequisites and settings for the server. If an error
@@ -66,7 +67,11 @@ func Setup(ganeshaConfig string) error {
 func Run(ganeshaConfig string) error {
 	// Start ganesha.nfsd
 	logger.Infof("Running NFS server!")
-	cmd := exec.Command("ganesha.nfsd", "-F", "-L", ganeshaLog, "-f", ganeshaConfig, "-N", ganeshaOptions)
+	logFile, err := filepath.EvalSymlinks(ganeshaLog)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate stdout symlink: %s", err)
+	}
+	cmd := exec.Command("ganesha.nfsd", "-F", "-L", logFile, "-f", ganeshaConfig, "-N", ganeshaOptions)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("ganesha.nfsd failed with error: %v, output: %s", err, out)
 	}
